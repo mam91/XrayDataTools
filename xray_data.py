@@ -11,8 +11,9 @@ class ImageData():
         self.bboxes = []
 
 class BBox():
-    def __init__(self, class_id, min_x, min_y, max_x, max_y):
+    def __init__(self, class_id, class_label, min_x, min_y, max_x, max_y):
         self.class_id = class_id
+        self.class_label = class_label
         self.min_x = min_x
         self.min_y = min_y
         self.max_x = max_x
@@ -47,9 +48,9 @@ class XrayDataset():
                 min_x = int(round(min(polygons['all_points_x'])))
 
                 if label not in self.classes:
-                    self.classes[label] = len(self.classes.keys())
+                    self.classes[label] = len(self.classes.keys()) + 1
 
-                bbox = BBox(self.classes[label], min_x, min_y, max_x, max_y)
+                bbox = BBox(self.classes[label], label, min_x, min_y, max_x, max_y)
                
                 self.add_image(label,
                     image_id = image_id,
@@ -70,6 +71,11 @@ class XrayDataset():
         image.bboxes.append(bbox)
         self.images.append(image)
 
-dset_dir = './input'
-dset = XrayDataset()
-dset.load_data(dset_dir)
+def main():
+    dset_dir = './input'
+    dset = XrayDataset()
+    dset.load_data(dset_dir)
+    print(dset.classes)
+
+if __name__ == '__main__':
+    main()
