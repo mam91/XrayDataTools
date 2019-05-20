@@ -9,6 +9,7 @@ class ImageData():
         self.width = 0
         self.height = 0
         self.bboxes = []
+        self.masks = []
 
 class BBox():
     def __init__(self, class_id, class_label, min_x, min_y, max_x, max_y):
@@ -18,6 +19,11 @@ class BBox():
         self.min_y = min_y
         self.max_x = max_x
         self.max_y = max_y
+
+class SegMask():
+    def __init__(self, all_points_x, all_points_y):
+        self.all_points_x = all_points_x
+        self.all_points_y = all_points_y
 
 class XrayDataset():
     def __init__(self):
@@ -61,7 +67,7 @@ class XrayDataset():
             else:
                 continue
 
-    def add_image(self, label, image_id, path, width, height, bbox):
+    def add_image(self, label, image_id, path, width, height, bbox, mask):
         image = ImageData()
         image.label = label
         image.id = image_id
@@ -69,6 +75,7 @@ class XrayDataset():
         image.height = height
         image.width = width
         image.bboxes.append(bbox)
+        image.masks.append(mask)
         self.images.append(image)
 
 def main():

@@ -6,11 +6,30 @@ import numpy as np
 import skimage.draw
 import shutil
 import cv2
+import base64
+import zlib
+import io
+from PIL import Image
 
-def strip_masks(directory):
-	mask_path = 'C:/Users/mmill/Downloads/Mask_RCNN-master/datasets/shuriken_contours_plus/' + directory + '/'
+#   This function provides the functionality to convert from a binary mask to a string of bytes for easy storage
+def mask_2_base64(mask):
+    img_pil = Image.fromarray(np.array(mask, dtype=np.uint8))
+    img_pil.putpalette([0,0,0,255,255,255])
+    bytes_io = io.BytesIO()
+    img_pil.save(bytes_io, format='PNG', transparency=0, optimize=0)
+    bytes = bytes_io.getvalue()
+    return base64.b64encode(zlib.compress(bytes)).decode('utf-8')
 
-	annotations = json.load(open(mask_path + 'via_region_data.json'))
+#   This function provides the functionality to convert from the binary mask bytes back into a binary mask
+def base64_2_mask(s):
+    z = zlib.decompress(base64.b64decode(s))
+    n = np.fromstring(z, np.uint8)
+    mask = cv2.imdecode(n, cv2.IMREAD_UNCHANGED)[:, :, 3].astype(bool)
+    return mask
+
+#   This function converts the vgg singular file format into a 1-1 image-annotation file format.
+def granularize_annotations_from_vgg(vgg_ann_file, input_dir, output_dir):
+	annotations = json.load(open(vgg_ann_file))
 
 	for mask in annotations:
 		image_file = annotations[mask]['filename']
@@ -18,13 +37,13 @@ def strip_masks(directory):
 
 		mask_exists = False
 
-		for data_file in os.listdir(mask_path):
+		for data_file in os.listdir(input_dir):
 			if mask_file == data_file:
 				mask_exists = True
 				break
 
 		if not mask_exists:
-			image_path = os.path.join(mask_path, image_file)
+			image_path = os.path.join(input_dir, image_file)
 			image = skimage.io.imread(image_path)
 			height, width = image.shape[:2]
 
@@ -32,7 +51,7 @@ def strip_masks(directory):
 			annotations[mask]['file_attributes']['width'] = width
 
 			annotation = { image_file : annotations[mask] }
-			with open(mask_path + mask_file, 'w') as outfile:  
+			with open(output_dir + mask_file, 'w') as outfile:  
 				json.dump(annotation, outfile)
 
 def delete_key(annotation, key):
@@ -41,6 +60,7 @@ def delete_key(annotation, key):
 	except KeyError:
 		pass
 
+#   This function exports images of masks centered with excess space trimmed
 def export_centered_mask_images(from_dir, to_dir):
     mask_path = 'C:/Users/mmill/Documents/GitHub/Education/MaskRCnn/datasets/shuriken_gun/train/'
     to_path = "C:/Users/mmill/Documents/GitHub/Education/MaskRCnn/MaskClassification/tf_files/xray_photos/shuriken/"
